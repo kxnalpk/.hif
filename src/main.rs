@@ -1,14 +1,13 @@
 use std::{
     env,
     fs::{self, OpenOptions},
-    io::Write,
+    io::{self, Write},
     path::PathBuf,
 };
 
 use eframe::egui;
 use egui_extras::RetainedImage;
-use colors_transform::Rgb;
-use image::{DynamicImage, GenericImageView};
+use image::{GenericImageView, Rgba};
 use skia_safe::{AlphaType, Color4f, ColorType, EncodedImageFormat, ImageInfo, Paint, Rect, Surface};
 use css_color_parser::Color as CssColor;
 
@@ -23,47 +22,34 @@ impl Sam {
         u32::from_ne_bytes(result)
     }
 
-    fn convert_png_to_hif(path: PathBuf) -> Result<(), std::io::Error> {
+    fn convert_png_to_hif(path: PathBuf) -> Result<(), io::Error> {
         let img = image::open(&path).expect("File not found!");
-        let mut str = String::new();
-        let mut last_line = 0;
 
-        for pixel in img.pixels() {
-            let hex_color = Rgb::from(
-                pixel.2 .0[0] as f32,
-                pixel.2 .0[1] as f32,
-                pixel.2 .0[2] as f32,
-            )
-            .to_css_hex_string();
+        let mut hif_data = Vec::new();
+        let (width, height) = (img.width(), img.height());
 
-            if last_line != pixel.1 {
-                str.push_str("\n");
-                last_line = pixel.1;
+        hif_data.extend_from_slice(&width.to_ne_bytes());
+        hif_data.extend_from_slice(&height.to_ne_bytes());
+
+        // Use the GenericImageView trait to access enumerate_pixels method
+        for (i, pixel) in img.to_rgba8().pixels().enumerate() {
+            let hex_color = pixel.0;
+
+            if i % width as usize != 0 {
+                hif_data.push(b'\n');
             }
-            str.push_str(&hex_color.replace("#", ""));
+
+            hif_data.extend_from_slice(&hex_color);
         }
 
-        if let Some(path_str) = &path.to_str() {
-            let height: u32 = img.height();
-            let width: u32 = img.width();
-
-            let height_bytes: [u8; 4] = height.to_ne_bytes();
-            let width_bytes: [u8; 4] = width.to_ne_bytes();
+        if let Some(path_str) = path.to_str() {
             let path_to_hif = path_str.replace(".png", ".hif");
+            let mut file = OpenOptions::new().write(true).create(true).open(&path_to_hif)?;
 
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .open(path_to_hif)
-                .expect("Couldn't write");
-            let string_bytes: Vec<u8> = Vec::from(str.as_bytes());
-
-            file.write_all(&width_bytes)?;
-            file.write_all(&height_bytes)?;
-            file.write_all(&string_bytes)?;
+            file.write_all(&hif_data)?;
             file.flush()?;
         } else {
-            println!("{}", "Couldn't find")
+            println!("{}", "Couldn't find");
         }
 
         Ok(())
@@ -102,15 +88,13 @@ impl Sam {
                 .parse::<CssColor>()
                 .expect("Failed to convert Hex to RGB");
             let color4f = Color4f::new(
-                parsed_color.r as f32,
-                parsed_color.g as f32,
-                parsed_color.b as f32,
-                0.004 as f32,
+                parsed_color.r as f32 / 255.0,
+                parsed_color.g as f32 / 255.0,
+                parsed_color.b as f32 / 255.0,
+                1.0,
             );
             let paint = Paint::new(color4f, None);
-            if i == 0 {
-                println!("{:?}", paint)
-            }
+
             let x = i % width as usize;
             let y = i / width as usize;
 
@@ -124,12 +108,13 @@ impl Sam {
             fs::write(TEMP_RESULT_PATH, &*data).expect("Failed to write image data to file");
         }
 
-        return (width, height);
+        (width, height)
     }
 
     fn run_app(file_path: PathBuf) -> Result<(), eframe::Error> {
         let (width, height) = Sam::hif_to_png(file_path);
         println!("{} {}", width, height);
+
         let options = eframe::NativeOptions {
             resizable: true,
             initial_window_size: Some(egui::vec2(width as f32, height as f32)),
@@ -174,7 +159,9 @@ fn main() -> Result<(), eframe::Error> {
 
     if &args[1] == "compile" {
         if args.len() < 3 {
-            panic!("Secondary argument ('path') not provided. Example: `cargo run compile ~/image.png`")
+            panic!(
+                "Secondary argument ('path') not provided. Example: `cargo run compile ~/image.png`"
+            )
         }
 
         let path: PathBuf = (&args[2]).into();
