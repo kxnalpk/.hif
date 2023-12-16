@@ -1788,6 +1788,7 @@ dependencies = [
  "encoding",
  "encoding_rs",
  "env_logger",
+ "flate2",
  "image",
  "rand",
  "show-image",
