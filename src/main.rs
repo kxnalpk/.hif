@@ -1,16 +1,14 @@
 use std::{
     env,
-    fs::{self, OpenOptions},
+    fs::{self},
     io::{Write, Read},
     path::PathBuf,
 };
 
 use eframe::egui;
 use egui_extras::RetainedImage;
-use colors_transform::Rgb;
 use image::{GenericImageView};
 use skia_safe::{AlphaType, Color4f, ColorType, EncodedImageFormat, ImageInfo, Paint, Rect, Surface};
-use css_color_parser::Color as CssColor;
 use flate2::{write::GzEncoder, Compression};
 
 static TEMP_RESULT_PATH: &str = "temp.png";
@@ -98,7 +96,7 @@ impl Sam {
         let mut reader = std::io::BufReader::new(input);
         let output_path = input_path.with_extension("hif.gz");
         let output = fs::File::create(&output_path)?;
-        let mut writer = std::io::BufWriter::new(output);
+        let writer = std::io::BufWriter::new(output);
         let mut encoder = GzEncoder::new(writer, Compression::default());
 
         let mut buffer = [0; 4096];
@@ -146,6 +144,7 @@ impl Default for SamPreview {
 
 impl eframe::App for SamPreview {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        println!("thanks for using the .hif file format :3");
         egui::CentralPanel::default().show(ctx, |ui| {
             self.image.show(ui);
         });
