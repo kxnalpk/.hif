@@ -161,7 +161,7 @@ fn main() -> Result<(), eframe::Error> {
 
     if &args[1] == "compile" {
         if args.len() < 3 {
-            eprintln!("Secondary argument ('path') not provided. Example: `cargo run compile ~/image.png`");
+            eprintln!("Secondary argument ('path') not provided. Example: `cargo run compile <path/img.png>`");
             return Ok(());
         }
 
