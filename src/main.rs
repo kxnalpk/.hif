@@ -11,7 +11,7 @@ use image::{GenericImageView};
 use skia_safe::{AlphaType, Color4f, ColorType, EncodedImageFormat, ImageInfo, Paint, Rect, Surface};
 use flate2::{write::GzEncoder, Compression};
 
-static TEMP_RESULT_PATH: &str = "temp.png";
+static TEMP_IMAGE: &str = "image.png";
 
 struct Sam;
 
@@ -85,7 +85,7 @@ impl Sam {
         if let Some(data) = image.encode_to_data(EncodedImageFormat::PNG) {
             let bytes = data.as_bytes();
             
-            fs::write(TEMP_RESULT_PATH, bytes).expect("Failed to write image data to file");
+            fs::write(TEMP_IMAGE, bytes).expect("Failed to write image data to file");
         }        
     
         (width, height)
@@ -132,12 +132,12 @@ struct SamPreview {
 
 impl Default for SamPreview {
     fn default() -> Self {
-        let image_data = std::fs::read(TEMP_RESULT_PATH).expect("Failed to read image file");
+        let image_data = std::fs::read(TEMP_IMAGE).expect("Failed to read image file");
 
-        fs::remove_file(TEMP_RESULT_PATH).expect("File delete failed on TEMP RESULT PATH");
+        fs::remove_file(TEMP_IMAGE).expect("File delete failed on TEMP RESULT PATH");
 
         Self {
-            image: RetainedImage::from_image_bytes(TEMP_RESULT_PATH, &image_data).unwrap(),
+            image: RetainedImage::from_image_bytes(TEMP_IMAGE, &image_data).unwrap(),
         }
     }
 }
