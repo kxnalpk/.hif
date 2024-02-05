@@ -3,3 +3,5 @@ I wanted to create my own image format since I was 12 years old using Windows 7,
 
 > Should you use this?
 I do not prefer using it since it's way too juicy and has nothing special but if you want to then sure! I will be updating this frequently to make it a decent file format. Thank you for reading <3
+
+EEEEEE
